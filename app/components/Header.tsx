@@ -2,17 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function Header() {
-  const router = useRouter();
-
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 현재 로그인한 사용자 확인
+    // 현재 로그인 사용자 확인
     const getUser = async () => {
       const {
         data: { user },
@@ -41,33 +38,56 @@ export default function Header() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    router.push("/");
-    router.refresh();
   };
 
   return (
-    <header className="border-b bg-white">
+    <header className="w-full border-b bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+
         {/* 로고 */}
         <Link
           href="/"
-          className="text-2xl font-bold text-gray-900"
+          className="text-2xl font-bold tracking-tight text-gray-900"
         >
           GiftFit
         </Link>
 
         {/* 오른쪽 메뉴 */}
-        <div className="flex items-center gap-5">
-          {loading ? (
-            <div className="h-8 w-20" />
-          ) : user ? (
+        <nav className="flex items-center gap-5">
+
+          {/* 로그인 상태 확인 중 */}
+          {loading ? null : user ? (
             <>
-              {/* 로그인한 경우에만 장바구니 표시 */}
+              {/* 장바구니 */}
               <Link
                 href="/cart"
                 className="text-sm font-medium text-gray-700 hover:text-black"
               >
                 🛒 장바구니
+              </Link>
+
+              {/* 마이페이지 */}
+              <Link
+                href="/mypage"
+                className="text-sm font-medium text-gray-700 hover:text-black"
+              >
+                마이페이지
+              </Link>
+
+              {/* 주문내역 */}
+              <Link
+                href="/orders"
+                className="text-sm font-medium text-gray-700 hover:text-black"
+              >
+                주문내역
+              </Link>
+
+              {/* AI 선물 추천 */}
+              <Link
+                href="/recommend"
+                className="text-sm font-medium text-gray-700 hover:text-black"
+              >
+                🎁 AI 선물 추천
               </Link>
 
               {/* 이메일 */}
@@ -78,14 +98,14 @@ export default function Header() {
               {/* 로그아웃 */}
               <button
                 onClick={handleLogout}
-                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
               >
                 로그아웃
               </button>
             </>
           ) : (
             <>
-              {/* 로그인하지 않은 경우 */}
+              {/* 로그인 */}
               <Link
                 href="/login"
                 className="text-sm font-medium text-gray-700 hover:text-black"
@@ -93,15 +113,16 @@ export default function Header() {
                 로그인
               </Link>
 
+              {/* 회원가입 */}
               <Link
                 href="/signup"
-                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
               >
                 회원가입
               </Link>
             </>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );
