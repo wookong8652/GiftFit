@@ -155,6 +155,21 @@ export default function MyPage() {
             ❤️ 내가 찜한 상품
           </h2>
 
+        <Link
+  href="/mypage/address"
+  className="rounded-2xl border bg-white p-6 shadow-sm transition hover:bg-gray-50"
+>
+  <div className="text-2xl">📦</div>
+
+  <h2 className="mt-3 text-lg font-bold">
+    배송지 관리
+  </h2>
+
+  <p className="mt-1 text-sm text-gray-500">
+    배송지를 추가하거나 수정할 수 있습니다.
+  </p>
+</Link>  
+
           <span className="text-sm text-gray-500">
             {favoriteProducts.length}개
           </span>

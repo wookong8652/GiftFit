@@ -10,9 +10,9 @@ export async function POST(request: Request) {
       orderId,
       amount,
       userId,
+      shippingAddressId,
     } = body;
 
-    // 필수 정보 확인
     if (!paymentKey || !orderId || !amount || !userId) {
       return NextResponse.json(
         {
@@ -24,11 +24,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // =========================
-    // 토스 시크릿 키
-    // =========================
-
-    const secretKey = process.env.TOSS_SECRET_KEY;
+    const secretKey =
+      process.env.TOSS_SECRET_KEY;
 
     if (!secretKey) {
       return NextResponse.json(
@@ -41,10 +38,6 @@ export async function POST(request: Request) {
         }
       );
     }
-
-    // =========================
-    // Supabase 서버 키
-    // =========================
 
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -64,16 +57,34 @@ export async function POST(request: Request) {
       );
     }
 
-    // 서버 전용 Supabase 클라이언트
     const supabaseAdmin = createClient(
       supabaseUrl,
       serviceRoleKey
     );
 
-    // =========================
-    // 토스 결제 승인
-    // =========================
+    // 배송지 조회
+    let shippingAddress: any = null;
 
+    if (shippingAddressId) {
+      const { data, error } =
+        await supabaseAdmin
+          .from("shipping_addresses")
+          .select("*")
+          .eq("id", shippingAddressId)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+      if (error) {
+        console.error(
+          "배송지 조회 실패:",
+          error
+        );
+      }
+
+      shippingAddress = data;
+    }
+
+    // 토스 결제 승인
     const encodedKey = Buffer.from(
       `${secretKey}:`
     ).toString("base64");
@@ -98,7 +109,6 @@ export async function POST(request: Request) {
 
     const data = await response.json();
 
-    // 토스 승인 실패
     if (!response.ok) {
       console.error(
         "토스 결제 승인 실패:",
@@ -110,7 +120,6 @@ export async function POST(request: Request) {
           message:
             data.message ||
             "결제 승인에 실패했습니다.",
-
           code: data.code,
         },
         {
@@ -119,14 +128,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // =========================
-    // Supabase 주문 저장
-    // =========================
-
     const orderName =
       data.orderName ||
       "GiftFit 상품";
 
+    // 주문 저장
     const { data: savedOrder, error } =
       await supabaseAdmin
         .from("orders")
@@ -137,11 +143,33 @@ export async function POST(request: Request) {
           order_name: orderName,
           amount: amount,
           status: "DONE",
+
+          shipping_address_id:
+            shippingAddress?.id ?? null,
+
+          recipient_name:
+            shippingAddress?.recipient_name ??
+            null,
+
+          recipient_phone:
+            shippingAddress?.recipient_phone ??
+            null,
+
+          postcode:
+            shippingAddress?.postcode ??
+            null,
+
+          shipping_address:
+            shippingAddress?.address ??
+            null,
+
+          shipping_detail_address:
+            shippingAddress?.detail_address ??
+            null,
         })
         .select()
         .single();
 
-    // 주문 저장 실패
     if (error) {
       console.error(
         "주문 저장 실패:",
@@ -152,7 +180,6 @@ export async function POST(request: Request) {
         {
           message:
             "결제는 승인되었지만 주문 저장에 실패했습니다.",
-
           detail: error.message,
         },
         {
@@ -161,18 +188,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // =========================
-    // 최종 성공
-    // =========================
-
     return NextResponse.json({
       success: true,
-
       message:
         "결제 및 주문 저장이 완료되었습니다.",
-
       payment: data,
-
       order: savedOrder,
     });
   } catch (error) {
